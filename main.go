@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"time"
 )
 
@@ -23,13 +26,18 @@ func (l Robot) Write(s Query) {
 
 func main() {
 
+	file, err := ioutil.ReadFile("./config.json")
+	if err != nil {
+		fmt.Printf("File error: %v\n", err)
+		os.Exit(1)
+	}
+	var config map[string]string
+	json.Unmarshal(file, &config)
+
 	tasks := []Task{
 		NewHiTask(),
 		NewSimpsonsTask(),
 		&TestTask{},
-	}
-	config := map[string]string{
-		"TCP_PORT": "3333",
 	}
 
 	robot := Robot{
