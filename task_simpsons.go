@@ -3,7 +3,6 @@ package main
 import (
 	"math/rand"
 	"strings"
-	"time"
 )
 
 type SimpsonsTask struct {
@@ -31,17 +30,16 @@ func (tt SimpsonsTask) HelpText() string {
 	return "Will give a simpsons quote if anyone mentions simpons"
 }
 
-func (tt SimpsonsTask) CanHandle(query Query) bool {
-	return strings.Contains(query.Statement, "simpsons")
-}
-
-func (tt SimpsonsTask) DoHandle(query Query) <-chan Answer {
-	c1 := make(chan Answer, 1)
+func (tt SimpsonsTask) Handle(query Query) (bool, <-chan Answer) {
+	if !strings.Contains(query.Statement, "simpsons") {
+		return false, nil
+	}
+	c1 := make(chan Answer)
 	rand.Seed(8) // Try changing this number!
 	go func() {
-		time.Sleep(time.Millisecond * 200)
+		//time.Sleep(time.Millisecond * 200)
 		c1 <- Answer(tt.quotes[rand.Intn(len(tt.quotes))])
 		close(c1)
 	}()
-	return c1
+	return true, c1
 }

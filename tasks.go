@@ -5,6 +5,5 @@ type Answer string
 type Task interface {
 	Name() string
 	HelpText() string
-	CanHandle(query Query) bool
-	DoHandle(query Query) <-chan Answer
+	Handle(query Query) (bool, <-chan Answer)
 }

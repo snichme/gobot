@@ -1,0 +1,12 @@
+{
+  "settings": {
+    "name": "GoBot",
+    "tcp_port": "3333",
+    "http_port": "8080",
+    "websocket_port": "12345"
+  },
+  "permissions": {
+    "Simpsons quotes": ["member"],
+    "HiTask": ["member", "guest"]
+  }
+}

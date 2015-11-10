@@ -1,14 +1,15 @@
 package main
 
-type Query struct {
-	Statement string
-	Client    ClientPrint
-}
-
-type ClientPrint interface {
-	Recieve(in <-chan Answer)
-}
-
 type Client interface {
 	Start()
+}
+
+type QueryContext struct {
+	Username string
+	Group    string
+}
+
+type Query struct {
+	Statement string
+	Context   QueryContext
 }

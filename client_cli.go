@@ -18,25 +18,31 @@ func grey(v string) string {
 	return "\033[37m" + v + "\033[0m"
 }
 
-func (cc CliClient) Recieve(in <-chan Answer) {
-	for answer := range in {
-		fmt.Printf("%s > %s\n", blue(cc.robot.Name), grey(string(answer)))
-	}
-}
 func (cc CliClient) Start() {
 	reader := bufio.NewReader(os.Stdin)
-
+	queryContext := QueryContext{
+		Username: "CLI User",
+		Group:    "admin", // Cli user are admin becuase it runs on the same machine as the bot
+	}
+	queryRobot := func(message string) {
+		q := Query{
+			Statement: message,
+			Context:   queryContext,
+		}
+		if found, c := cc.robot.Query(q); found {
+			for answer := range c {
+				fmt.Printf("%s > %s\n", blue(cc.robot.Name()), grey(string(answer)))
+			}
+		}
+	}
 	for {
-		fmt.Printf("%s > ", blue("User"))
+		fmt.Fprintf(cc.robot, "%s > ", blue("Admin"))
 		text, _ := reader.ReadString('\n')
 		text = strings.Trim(text, " \n")
 		if text == "quit" {
 			break
 		}
-		cc.robot.Write(Query{
-			Statement: text,
-			Client:    cc,
-		})
+		queryRobot(text)
 	}
 
 }

@@ -8,47 +8,39 @@ import (
 	"time"
 )
 
-type Robot struct {
-	Name   string
-	tasks  []Task
-	config map[string]string
-}
-
-func (l Robot) Write(s Query) {
-	for _, task := range l.tasks {
-		if task.CanHandle(s) {
-			c := task.DoHandle(s)
-			s.Client.Recieve(c)
-			return
-		}
-	}
-}
-
-func main() {
-
-	file, err := ioutil.ReadFile("./config.json")
+func readConfig(filename string) (config RobotConfig) {
+	file, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Printf("File error: %v\n", err)
 		os.Exit(1)
 	}
-	var config map[string]string
-	json.Unmarshal(file, &config)
+	if err := json.Unmarshal(file, &config); err != nil {
+		fmt.Printf("Cannot parse config json: %v\n", err)
+		os.Exit(1)
+	}
+	return
+}
 
-	tasks := []Task{
+func getTasks() []Task {
+	return []Task{
 		NewHiTask(),
+		NewServerStatusTask(),
 		NewSimpsonsTask(),
-		&TestTask{},
+		//NewSimpsonsTask(),
 	}
+}
 
-	robot := Robot{
-		Name:   "GoBot",
-		tasks:  tasks,
-		config: config,
-	}
+func main() {
+	config := readConfig("./config.json")
+	robot := NewRobot(config, getTasks())
 
 	tcpClient := NewTCPClient(robot)
 	go tcpClient.Start()
+	restClient := NewRestClient(robot)
+	go restClient.Start()
 
+	wsClient := NewWebsocketClient(robot)
+	go wsClient.Start()
 	cliClient := NewCliClient(robot)
 	time.Sleep(time.Second * 1)
 	cliClient.Start()
