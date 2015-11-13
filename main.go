@@ -21,26 +21,27 @@ func readConfig(filename string) (config RobotConfig) {
 	return
 }
 
-func getTasks() []Task {
-	return []Task{
+func main() {
+	config := readConfig("./config.json")
+
+	tasks := []Task{
 		NewHiTask(),
 		NewServerStatusTask(),
 		NewSimpsonsTask(),
-		//NewSimpsonsTask(),
+		NewJenkinsListTask(config.Settings["jenkinsURL"]),
+		NewJenkinsRunBuildTask(config.Settings["jenkinsURL"]),
+		NewJenkinsStatusTask(config.Settings["jenkinsURL"]),
 	}
-}
-
-func main() {
-	config := readConfig("./config.json")
-	robot := NewRobot(config, getTasks())
+	robot := NewRobot(config, tasks)
 
 	tcpClient := NewTCPClient(robot)
 	go tcpClient.Start()
 	restClient := NewRestClient(robot)
 	go restClient.Start()
 
-	wsClient := NewWebsocketClient(robot)
-	go wsClient.Start()
+	// wsClient := NewWebsocketClient(robot)
+	// go wsClient.Start()
+
 	cliClient := NewCliClient(robot)
 	time.Sleep(time.Second * 1)
 	cliClient.Start()

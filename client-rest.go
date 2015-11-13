@@ -84,7 +84,7 @@ func restHandler(robot Robot) http.HandlerFunc {
 }
 
 func (client RestClient) Start() {
-	uri := "0.0.0.0:" + client.robot.settings["http_port"]
+	uri := "127.0.0.1:" + client.robot.settings["http_port"]
 	fmt.Fprintf(client.robot, "RestClient: Listening on http://%s/rest\n", uri)
 	http.HandleFunc("/rest", restHandler(client.robot))
 	http.ListenAndServe(uri, nil)
