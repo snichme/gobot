@@ -7,10 +7,12 @@ import (
 	"strings"
 )
 
+//TCPClient Connect to the robot using TCP
 type TCPClient struct {
 	robot Robot
 }
 
+// Start start the client
 func (cc TCPClient) Start() {
 	uri := "127.0.0.1:" + cc.robot.settings["tcp_port"]
 	l, err := net.Listen("tcp", uri)
@@ -62,9 +64,11 @@ func (cc TCPClient) Start() {
 				}
 			}
 		}
+		conn.Close()
 	}
 }
 
+// NewTCPClient Get a new TCP Client
 func NewTCPClient(robot Robot) *TCPClient {
 	return &TCPClient{
 		robot: robot,
