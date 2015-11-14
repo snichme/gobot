@@ -31,6 +31,7 @@ func main() {
 		NewJenkinsListTask(config.Settings["jenkinsURL"]),
 		NewJenkinsRunBuildTask(config.Settings["jenkinsURL"]),
 		NewJenkinsStatusTask(config.Settings["jenkinsURL"]),
+		NewHackerNewsTopTask(),
 	}
 	robot := NewRobot(config, tasks)
 
