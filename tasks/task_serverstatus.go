@@ -1,4 +1,4 @@
-package main
+package tasks
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/snichme/gobot/types"
 )
 
 type ServerStatusTask struct {
@@ -27,37 +29,19 @@ func (task ServerStatusTask) HelpText() string {
 	return "Tells you how the server where the bot lives are doing"
 }
 
-func (task ServerStatusTask) Handle(query Query) (bool, <-chan Answer) {
+func (task ServerStatusTask) Handle(query types.Query) (bool, <-chan types.Answer) {
 	if !task.queryRegexp.MatchString(query.Statement) {
 		return false, nil
 	}
-	c1 := make(chan Answer)
+	c1 := make(chan types.Answer)
 	go func(cmd string) {
 		out, err := exec.Command(cmd).Output()
 		if err != nil {
 			log.Fatal(err)
 		}
-		c1 <- Answer(fmt.Sprintf("My status is: %s", strings.Trim(string(out), " \n")))
+		c1 <- types.Answer(fmt.Sprintf("My status is: %s", strings.Trim(string(out), " \n")))
 		close(c1)
 	}("uptime")
 	return true, c1
 
-}
-
-func (task ServerStatusTask) CanHandle(query Query) bool {
-	return task.queryRegexp.MatchString(query.Statement)
-}
-func (task ServerStatusTask) DoHandle(query Query) <-chan Answer {
-	c1 := make(chan Answer)
-
-	go func(cmd string) {
-		out, err := exec.Command(cmd).Output()
-		if err != nil {
-			log.Fatal(err)
-		}
-		c1 <- Answer(fmt.Sprintf("My status it: %s", out))
-		close(c1)
-	}("uptime")
-
-	return c1
 }

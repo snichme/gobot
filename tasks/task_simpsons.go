@@ -1,8 +1,10 @@
-package main
+package tasks
 
 import (
 	"math/rand"
 	"strings"
+
+	"github.com/snichme/gobot/types"
 )
 
 type SimpsonsTask struct {
@@ -30,15 +32,15 @@ func (tt SimpsonsTask) HelpText() string {
 	return "Will give a simpsons quote if anyone mentions simpons"
 }
 
-func (tt SimpsonsTask) Handle(query Query) (bool, <-chan Answer) {
+func (tt SimpsonsTask) Handle(query types.Query) (bool, <-chan types.Answer) {
 	if !strings.Contains(query.Statement, "simpsons") {
 		return false, nil
 	}
-	c1 := make(chan Answer)
+	c1 := make(chan types.Answer)
 	rand.Seed(8) // Try changing this number!
 	go func() {
 		//time.Sleep(time.Millisecond * 200)
-		c1 <- Answer(tt.quotes[rand.Intn(len(tt.quotes))])
+		c1 <- types.Answer(tt.quotes[rand.Intn(len(tt.quotes))])
 		close(c1)
 	}()
 	return true, c1

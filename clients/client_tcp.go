@@ -1,20 +1,22 @@
-package main
+package clients
 
 import (
 	"fmt"
 	"net"
 	"os"
 	"strings"
+
+	"github.com/snichme/gobot/types"
 )
 
 //TCPClient Connect to the robot using TCP
 type TCPClient struct {
-	robot Robot
+	robot types.Robot
 }
 
 // Start start the client
 func (cc TCPClient) Start() {
-	uri := "127.0.0.1:" + cc.robot.settings["tcp_port"]
+	uri := "127.0.0.1:" + cc.robot.Setting("tcp_port")
 	l, err := net.Listen("tcp", uri)
 	if err != nil {
 		fmt.Fprintf(cc.robot, "Error listening: %s", err.Error())
@@ -22,7 +24,7 @@ func (cc TCPClient) Start() {
 	}
 	// Close the listener when the application closes.
 	defer l.Close()
-	fmt.Fprintf(cc.robot, "TcpClient: Listening on %s\n", uri)
+	fmt.Fprintf(cc.robot, "TcpClient: Listening on %s", uri)
 	for {
 		// Listen for an incoming connection.
 		conn, err := l.Accept()
@@ -42,9 +44,9 @@ func (cc TCPClient) Start() {
 			if message == "quit" {
 				break
 			}
-			q := Query{
+			q := types.Query{
 				Statement: message,
-				Context: QueryContext{
+				Context: types.QueryContext{
 					Username: "TcpUser-1",
 					Group:    "guest", // All Tcp users are Guest since no auth
 				},
@@ -69,7 +71,7 @@ func (cc TCPClient) Start() {
 }
 
 // NewTCPClient Get a new TCP Client
-func NewTCPClient(robot Robot) *TCPClient {
+func NewTCPClient(robot types.Robot) *TCPClient {
 	return &TCPClient{
 		robot: robot,
 	}

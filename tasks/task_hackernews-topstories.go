@@ -1,4 +1,4 @@
-package main
+package tasks
 
 import (
 	"encoding/json"
@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/snichme/gobot/types"
 )
 
 //HackerNewsTopTask Get the top 5 stories on HackerNews
@@ -68,11 +70,11 @@ func (task HackerNewsTopTask) getStories(storyIds []int) ([]string, error) {
 }
 
 //Handle Run the task if query matches
-func (task HackerNewsTopTask) Handle(query Query) (bool, <-chan Answer) {
+func (task HackerNewsTopTask) Handle(query types.Query) (bool, <-chan types.Answer) {
 	if !strings.Contains(query.Statement, "hackernews top") && !strings.Contains(query.Statement, "hn top") {
 		return false, nil
 	}
-	c1 := make(chan Answer)
+	c1 := make(chan types.Answer)
 	go func() {
 		ids, err := task.getTopIds()
 		if err != nil {
@@ -85,7 +87,7 @@ func (task HackerNewsTopTask) Handle(query Query) (bool, <-chan Answer) {
 			return
 		}
 		for _, story := range stories {
-			c1 <- Answer(story)
+			c1 <- types.Answer(story)
 		}
 		close(c1)
 	}()

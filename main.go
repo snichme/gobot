@@ -6,9 +6,13 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
+
+	"github.com/snichme/gobot/clients"
+	"github.com/snichme/gobot/tasks"
+	"github.com/snichme/gobot/types"
 )
 
-func readConfig(filename string) (config RobotConfig) {
+func readConfig(filename string) (config types.RobotConfig) {
 	file, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Printf("File error: %v\n", err)
@@ -24,28 +28,30 @@ func readConfig(filename string) (config RobotConfig) {
 func main() {
 	config := readConfig("./config.json")
 
-	tasks := []Task{
-		NewHiTask(),
-		NewServerStatusTask(),
-		NewSimpsonsTask(),
-		NewJenkinsListTask(config.Settings["jenkinsURL"]),
-		NewJenkinsRunBuildTask(config.Settings["jenkinsURL"]),
-		NewJenkinsStatusTask(config.Settings["jenkinsURL"]),
-		NewHackerNewsTopTask(),
+	availTasks := []types.Task{
+		tasks.NewHiTask(),
+		tasks.NewServerStatusTask(),
+		tasks.NewSimpsonsTask(),
+		tasks.NewXkcdTask(),
+		tasks.NewJenkinsListTask(config.Settings["jenkinsURL"]),
+		tasks.NewJenkinsRunBuildTask(config.Settings["jenkinsURL"]),
+		tasks.NewJenkinsStatusTask(config.Settings["jenkinsURL"]),
+		tasks.NewHackerNewsTopTask(),
 	}
-	robot := NewRobot(config, tasks)
+	robot := NewRobot(config, availTasks)
 
-	tcpClient := NewTCPClient(robot)
+	tcpClient := clients.NewTCPClient(robot)
 	go tcpClient.Start()
-	restClient := NewRestClient(robot)
+	restClient := clients.NewRestClient(robot)
 	go restClient.Start()
 
+	// ircClient := clients.NewIRCClient(robot)
+	// go ircClient.Start()
 	// wsClient := NewWebsocketClient(robot)
 	// go wsClient.Start()
 
-	cliClient := NewCliClient(robot)
+	cliClient := clients.NewCliClient(robot)
 	time.Sleep(time.Second * 1)
 	cliClient.Start()
-
 	fmt.Println("Power down")
 }

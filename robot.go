@@ -2,32 +2,35 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/snichme/gobot/types"
 )
 
-type RobotConfig struct {
-	Settings    map[string]string   `json:"settings"`
-	Permissions map[string][]string `json:"permissions"`
+func blue(v string) string {
+	return "\033[34m" + v + "\033[0m"
 }
-
-type RobotBrain interface {
-	Get(key string) interface{}
-	Set(key string, value interface{}) bool
+func grey(v string) string {
+	return "\033[37m" + v + "\033[0m"
 }
 
 type Robot struct {
-	tasks       []Task
+	log         io.Writer
+	tasks       []types.Task
 	settings    map[string]string
 	permissions map[string][]string
-	Brain       RobotBrain
+	brain       types.RobotBrain
 }
 
 func (robot Robot) Name() string {
 	return robot.settings["name"]
 }
 
-func (r Robot) HasAccess(taskName string, context QueryContext) bool {
+func (r Robot) HasAccess(taskName string, context types.QueryContext) bool {
 	contextGroup := context.Group
 	groups, ok := r.permissions[taskName]
 	if contextGroup == "admin" {
@@ -45,10 +48,11 @@ func (r Robot) HasAccess(taskName string, context QueryContext) bool {
 }
 
 func (r Robot) Write(p []byte) (n int, err error) {
-	return fmt.Fprintf(os.Stdout, "%s", p)
+	fmt.Fprintf(r.log, "[%v] %s\n", time.Now(), p)
+	return fmt.Fprintf(os.Stdout, "%s > %s\n", blue(r.Name()), grey(string(p)))
 }
 
-func (l Robot) Query(s Query) (bool, <-chan Answer) {
+func (l Robot) Query(s types.Query) (bool, <-chan types.Answer) {
 	if l.CanHandle(s) {
 		return true, l.DoHandle(s)
 	}
@@ -65,18 +69,25 @@ func (l Robot) Query(s Query) (bool, <-chan Answer) {
 func (r Robot) HelpText() string {
 	return "Will help you when in needs"
 }
-func (r Robot) CanHandle(query Query) bool {
+func (r Robot) CanHandle(query types.Query) bool {
 	return strings.Contains(query.Statement, "help me")
 }
-func (r Robot) DoHandle(query Query) <-chan Answer {
-	c1 := make(chan Answer)
+func (r Robot) DoHandle(query types.Query) <-chan types.Answer {
+	c1 := make(chan types.Answer)
 	go func() {
 		for _, task := range r.tasks {
-			c1 <- Answer(fmt.Sprintf("[%s] %s", task.Name(), task.HelpText()))
+			c1 <- types.Answer(fmt.Sprintf("[%s] %s", task.Name(), task.HelpText()))
 		}
 		close(c1)
 	}()
 	return c1
+}
+func (r Robot) Brain() types.RobotBrain {
+	return r.brain
+}
+
+func (r Robot) Setting(key string) string {
+	return r.settings[key]
 }
 
 type InMemoryBrain struct {
@@ -91,7 +102,7 @@ func (brain InMemoryBrain) Set(key string, value interface{}) bool {
 	return true
 }
 
-func NewRobot(config RobotConfig, tasks []Task) Robot {
+func NewRobot(config types.RobotConfig, tasks []types.Task) types.Robot {
 	brain := &InMemoryBrain{
 		storage: make(map[string]interface{}),
 	}
@@ -101,10 +112,15 @@ func NewRobot(config RobotConfig, tasks []Task) Robot {
 		{"username": "apa", "password": "banan", "group": "member"},
 	})
 
+	fo, err := os.Create("robotlog.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
 	return Robot{
+		log:         fo,
 		tasks:       tasks,
 		settings:    config.Settings,
 		permissions: config.Permissions,
-		Brain:       brain,
+		brain:       brain,
 	}
 }

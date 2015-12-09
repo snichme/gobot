@@ -1,24 +1,26 @@
-package main
+package clients
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/snichme/gobot/types"
 )
 
 type RestClient struct {
-	robot Robot
+	robot types.Robot
 }
 
 type RestResponse struct {
-	RobotName string   `json:"robot"`
-	Query     string   `json:"query"`
-	Answers   []Answer `json:"answers"`
+	RobotName string         `json:"robot"`
+	Query     string         `json:"query"`
+	Answers   []types.Answer `json:"answers"`
 }
 
-func restHandler(robot Robot) http.HandlerFunc {
+func restHandler(robot types.Robot) http.HandlerFunc {
 	isAuthorized := func(username, password string) bool {
-		users := robot.Brain.Get("users").([]map[string]string)
+		users := robot.Brain().Get("users").([]map[string]string)
 		for _, user := range users {
 			if user["username"] == username && user["password"] == password {
 				return true
@@ -28,7 +30,7 @@ func restHandler(robot Robot) http.HandlerFunc {
 	}
 
 	getGroupForUser := func(username string) string {
-		users := robot.Brain.Get("users").([]map[string]string)
+		users := robot.Brain().Get("users").([]map[string]string)
 		for _, user := range users {
 			if user["username"] == username {
 				return user["group"]
@@ -57,15 +59,15 @@ func restHandler(robot Robot) http.HandlerFunc {
 			return
 		}
 
-		q := Query{
+		q := types.Query{
 			Statement: query,
-			Context: QueryContext{
+			Context: types.QueryContext{
 				Username: username,
 				Group:    getGroupForUser(username), // no auth impl yet
 			},
 		}
 		if found, c := robot.Query(q); found {
-			var answers []Answer
+			var answers []types.Answer
 			for answer := range c {
 				answers = append(answers, answer)
 			}
@@ -84,13 +86,13 @@ func restHandler(robot Robot) http.HandlerFunc {
 }
 
 func (client RestClient) Start() {
-	uri := "127.0.0.1:" + client.robot.settings["http_port"]
-	fmt.Fprintf(client.robot, "RestClient: Listening on http://%s/rest\n", uri)
+	uri := "127.0.0.1:" + client.robot.Setting("http_port")
+	fmt.Fprintf(client.robot, "RestClient: Listening on http://%s/rest", uri)
 	http.HandleFunc("/rest", restHandler(client.robot))
 	http.ListenAndServe(uri, nil)
 }
 
-func NewRestClient(robot Robot) *RestClient {
+func NewRestClient(robot types.Robot) *RestClient {
 
 	return &RestClient{
 		robot: robot,

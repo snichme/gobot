@@ -1,4 +1,4 @@
-package main
+package tasks
 
 import (
 	"encoding/json"
@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+
+	"github.com/snichme/gobot/types"
 )
 
 type XkcdTask struct {
@@ -30,11 +32,12 @@ func (task XkcdTask) Name() string {
 func (task XkcdTask) HelpText() string {
 	return "Gives you a xkcd ref if someone mentions xkcd"
 }
-func (task XkcdTask) CanHandle(query Query) bool {
-	return task.queryRegexp.MatchString(query.Statement)
-}
-func (task XkcdTask) DoHandle(query Query) <-chan Answer {
-	c1 := make(chan Answer)
+
+func (task XkcdTask) Handle(query types.Query) (bool, <-chan types.Answer) {
+	if !task.queryRegexp.MatchString(query.Statement) {
+		return false, nil
+	}
+	c1 := make(chan types.Answer)
 
 	go func(uri string) {
 		defer close(c1)
@@ -52,9 +55,9 @@ func (task XkcdTask) DoHandle(query Query) <-chan Answer {
 			return
 		}
 
-		c1 <- Answer(fmt.Sprintf("You mentioned xkcd, here is a link to the latest: %s (%s)", jsonResp.ImageUrl, jsonResp.Title))
+		c1 <- types.Answer(fmt.Sprintf("You mentioned xkcd, here is a link to the latest: %s (%s)", jsonResp.ImageUrl, jsonResp.Title))
 
 	}("http://xkcd.com/info.0.json")
 
-	return c1
+	return true, c1
 }

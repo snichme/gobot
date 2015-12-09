@@ -1,4 +1,4 @@
-package main
+package tasks
 
 import (
 	"encoding/json"
@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+
+	"github.com/snichme/gobot/types"
 )
 
 // JenkinsRunBuildTask Task for running jobs in Jenkins
@@ -27,7 +29,7 @@ func (task JenkinsRunBuildTask) HelpText() string {
 }
 
 // Handle If query matches, grab the job name from the query and queue that build
-func (task JenkinsRunBuildTask) Handle(query Query) (bool, <-chan Answer) {
+func (task JenkinsRunBuildTask) Handle(query types.Query) (bool, <-chan types.Answer) {
 	matches := task.queryRegexp.FindStringSubmatch(query.Statement)
 	if matches == nil {
 		return false, nil
@@ -36,12 +38,12 @@ func (task JenkinsRunBuildTask) Handle(query Query) (bool, <-chan Answer) {
 	uri := fmt.Sprintf("%s/job/%s/build", task.jenkinsURL, jobName)
 	body := strings.NewReader("")
 
-	c1 := make(chan Answer)
+	c1 := make(chan types.Answer)
 	go func() {
 		resp, err := http.Post(uri, " text/plain", body)
 		jobURL := resp.Header.Get("Location")
 		if err != nil {
-			c1 <- Answer(err.Error())
+			c1 <- types.Answer(err.Error())
 		} else {
 			var responseText string
 			if resp.StatusCode == 201 {
@@ -51,7 +53,7 @@ func (task JenkinsRunBuildTask) Handle(query Query) (bool, <-chan Answer) {
 			} else {
 				responseText = fmt.Sprintf("Unknown response (%s) from jenkins", resp.Status)
 			}
-			c1 <- Answer(responseText)
+			c1 <- types.Answer(responseText)
 		}
 		resp.Body.Close()
 		close(c1)
@@ -89,11 +91,11 @@ type listTaskResponse struct {
 }
 
 // Handle If query matches, grab the job name from the query and queue that build
-func (task JenkinsListTask) Handle(query Query) (bool, <-chan Answer) {
+func (task JenkinsListTask) Handle(query types.Query) (bool, <-chan types.Answer) {
 	if query.Statement != "jenkins list" {
 		return false, nil
 	}
-	c1 := make(chan Answer)
+	c1 := make(chan types.Answer)
 	go func() {
 		var jsonResp listTaskResponse
 
@@ -103,9 +105,9 @@ func (task JenkinsListTask) Handle(query Query) (bool, <-chan Answer) {
 
 		json.Unmarshal(body, &jsonResp)
 
-		c1 <- Answer("Here is the jobs available in Jenkins: ")
+		c1 <- types.Answer("Here is the jobs available in Jenkins: ")
 		for _, m := range jsonResp.Jobs {
-			c1 <- Answer(fmt.Sprintf("%s %s", m["name"], m["url"]))
+			c1 <- types.Answer(fmt.Sprintf("%s %s", m["name"], m["url"]))
 		}
 		close(c1)
 	}()
@@ -143,7 +145,7 @@ type statusTaskResponse struct {
 }
 
 // Handle If query matches, grab the job name from the query and queue that build
-func (task JenkinsStatusTask) Handle(query Query) (bool, <-chan Answer) {
+func (task JenkinsStatusTask) Handle(query types.Query) (bool, <-chan types.Answer) {
 	matches := task.queryRegexp.FindStringSubmatch(query.Statement)
 	if matches == nil {
 		return false, nil
@@ -151,7 +153,7 @@ func (task JenkinsStatusTask) Handle(query Query) (bool, <-chan Answer) {
 	jobName := matches[1]
 
 	uri := fmt.Sprintf("%s/job/%s/api/json", task.jenkinsURL, jobName)
-	c1 := make(chan Answer)
+	c1 := make(chan types.Answer)
 	go func() {
 		var jsonResp statusTaskResponse
 
@@ -164,9 +166,9 @@ func (task JenkinsStatusTask) Handle(query Query) (bool, <-chan Answer) {
 
 		json.Unmarshal(body, &jsonResp)
 
-		c1 <- Answer(fmt.Sprintf("Status: %s", jsonResp.Color))
-		c1 <- Answer(fmt.Sprintf("Url: %s", jsonResp.URL))
-		c1 <- Answer(fmt.Sprintf("Health report: %s", jsonResp.HealthReport[0]["description"]))
+		c1 <- types.Answer(fmt.Sprintf("Status: %s", jsonResp.Color))
+		c1 <- types.Answer(fmt.Sprintf("Url: %s", jsonResp.URL))
+		c1 <- types.Answer(fmt.Sprintf("Health report: %s", jsonResp.HealthReport[0]["description"]))
 		close(c1)
 	}()
 	return true, c1

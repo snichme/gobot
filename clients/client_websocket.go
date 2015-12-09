@@ -1,4 +1,4 @@
-package main
+package clients
 
 import (
 	"fmt"
@@ -6,15 +6,16 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/snichme/gobot/types"
 )
 
 type WebsocketClient struct {
-	robot Robot
+	robot types.Robot
 }
 
 type WsConnection struct {
 	writer http.ResponseWriter
-	robot  Robot
+	robot  types.Robot
 	query  string
 }
 
@@ -23,9 +24,9 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func wsHandler(robot Robot) http.HandlerFunc {
+func wsHandler(robot types.Robot) http.HandlerFunc {
 	isAuthorized := func(username, password string) bool {
-		users := robot.Brain.Get("users").([]map[string]string)
+		users := robot.Brain().Get("users").([]map[string]string)
 		for _, user := range users {
 			if user["username"] == username && user["password"] == password {
 				return true
@@ -71,13 +72,13 @@ func wsHandler(robot Robot) http.HandlerFunc {
 }
 
 func (client WebsocketClient) Start() {
-	uri := "0.0.0.0:" + client.robot.settings["websocket_port"]
+	uri := "0.0.0.0:" + client.robot.Setting("websocket_port")
 	fmt.Fprintf(client.robot, "WebsocketClient: Listening on ws://%s/ws\n", uri)
 	http.HandleFunc("/ws", wsHandler(client.robot))
 	http.ListenAndServe(uri, nil)
 }
 
-func NewWebsocketClient(robot Robot) *WebsocketClient {
+func NewWebsocketClient(robot types.Robot) *WebsocketClient {
 
 	return &WebsocketClient{
 		robot: robot,
